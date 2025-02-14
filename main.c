@@ -2,16 +2,32 @@
 #include <sys/types.h>
 #include<sys/types.h>
 #include<unistd.h>
+#include<string.h>
 #include"map_editor.h"
 #include"raylib.h"
+#include"player.h"
 
 
 void init_screen(void);
 
-int main(void)
+int main(int argc, char** argv)
 {
+  if(argc != 2)
+  {
+    perror("usage:\n main: map, player");
+    return 1;
+  }
 
-  init_map_editor();
+  
+  if(strcmp(argv[1], "map") == 0)
+  {
+    init_map_editor();
+  }
+  if(strcmp(argv[1], "player") == 0)
+  {
+    init_player();
+  }
+
   /*pid_t p;*/
   /**/
   /*p = fork();*/
