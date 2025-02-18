@@ -1,4 +1,6 @@
 #include<stdio.h>
+#include<stdlib.h>
+#include "constants.h"
 #include "map_utils.h"
 #include"raylib.h"
 #include "world.h"
@@ -10,25 +12,16 @@ void init_test_columns(void);
 
 void init_player(void)
 {
+    Vector3 player_start_pos = (Vector3){SCREEN_WIDTH / 20.0f, 10.0f, SCREEN_HEIGHT / 20.0f};
 
-    /*Player* player = NULL;*/
     Camera3D camera = { 0 };
-    camera.position = (Vector3){ 10.0f, 10.0f, 4.0f };
+    camera.position = player_start_pos;
     camera.target = (Vector3){ 0.0f, 2.0f, 0.0f }; 
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };    
     camera.fovy = (float)PLAYER_FOV;             
     camera.projection = CAMERA_PERSPECTIVE;     
-    printf(" player and camera init\n");
 
-    // set camera to the player's 
-    /*player->camera = camera;*/
-    /**/
-    /*printf("Player camera set\n");*/
-
-    const int screenWidth = 800;
-    const int screenHeight = 450;
-
-    InitWindow(screenWidth, screenHeight, "Player");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Player");
     load_map_layout("map_layout.txt");
     generate_world_walls();
     printf("World walls generated\n");
@@ -36,11 +29,53 @@ void init_player(void)
 
     DisableCursor();                    // Limit cursor to relative movement inside the window
 
+
+    Vector3 movement;
+
     SetTargetFPS(60);            
     while (!WindowShouldClose())  
     {
+      movement.x = 0.0f;
+      movement.y = 0.0f;
+      movement.z = 0.0f;
+      // KEYBINDS - custom movement keybinds
 
-        UpdateCamera(&camera, CAMERA_FIRST_PERSON);
+        if(IsKeyDown(KEY_W))
+        {
+          movement.x += PLAYER_MOVE_SPEED;
+        }
+        if(IsKeyDown(KEY_S))
+        {
+          movement.x -= PLAYER_MOVE_SPEED;
+        }
+        if(IsKeyDown(KEY_A))
+        {
+          movement.y -= PLAYER_MOVE_SPEED;
+        }
+        if(IsKeyDown(KEY_D))
+        {
+          movement.y += PLAYER_MOVE_SPEED;
+        }
+    
+        // up and down
+        if(IsKeyDown(KEY_SPACE))
+        {
+          movement.z += PLAYER_MOVE_SPEED;
+        }
+        if(IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_C))
+        {
+          movement.z -= PLAYER_MOVE_SPEED;
+        }
+
+        UpdateCameraPro(&camera,
+                        movement,
+                        (Vector3){
+                          GetMouseDelta().x * PLAYER_MOUSE_SENSITIVITY,
+                          GetMouseDelta().y * PLAYER_MOUSE_SENSITIVITY,
+                          0.0f
+                        },
+                        0.0f);
+
 
         BeginDrawing();
 
@@ -48,9 +83,7 @@ void init_player(void)
 
             BeginMode3D(camera);
 
-
-                init_test_columns();
-                /*printf("[%f, %f, %f]\n", camera.position.x, camera.position.y, camera.position.z);*/
+              draw_world_walls();
 
             EndMode3D();
 
@@ -60,15 +93,3 @@ void init_player(void)
     CloseWindow();        // Close window and OpenGL context
 
 }
-
-void init_test_columns(void)
-{
-
-    /*DrawPlane((Vector3){ 0.0f, 0.0f, 0.0f }, (Vector2){ 32.0f, 32.0f }, LIGHTGRAY); // Draw ground*/
-    /*DrawCube((Vector3){ -16.0f, 2.5f, 0.0f }, 1.0f, 5.0f, 32.0f, BLUE);     // Draw a blue wall*/
-    /*DrawCube((Vector3){ 16.0f, 2.5f, 0.0f }, 1.0f, 5.0f, 32.0f, LIME);      // Draw a green wall*/
-    /*DrawCube((Vector3){ 0.0f, 2.5f, 16.0f }, 32.0f, 5.0f, 1.0f, GOLD);*/
-    /*DrawCubeV((Vector3){1.0f, 1.0f, 0.0f}, (Vector3){5.0f, 5.0f, 1.0f}, BLUE);*/
-    draw_world_walls();
-}
-

@@ -57,6 +57,15 @@ World_Wall create_world_wall(map_sector ms)
 
   // generate the wall's model for generation
   Model wall_model = generate_wall_model(wall_height, wall_width, wall_length);
+
+  // generating the wall's texture
+  Texture2D wall_texture;
+  char* texture_file_path;
+  texture_file_path = "textures/brick_wall_texture.png";
+  wall_texture = LoadTexture(texture_file_path);
+  // setting wall texture
+  wall_model.materials->maps[0].texture = wall_texture;
+  /*wall_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].value = wall_width / 2.0f;  // Scale X*/
   
   // generate a midpoint for the vector
   Vector3 mid_vec = (Vector3){
@@ -77,7 +86,7 @@ World_Wall create_world_wall(map_sector ms)
     wall_height,
     wall_width,
     wall_length,
-    RED
+    WHITE
   };
 
   return wall;
