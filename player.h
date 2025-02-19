@@ -13,6 +13,7 @@ typedef struct{
 #define PLAYER_CAMERA_MODE CAMERA_FIRST_PERSON
 #define PLAYER_MOVE_SPEED 0.5f
 #define PLAYER_MOUSE_SENSITIVITY 0.25f
+#define PLAYER_RADIUS 1.5f
 
 void init_player(void);
 

@@ -1,8 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 500
+#define SCREEN_WIDTH 1600
+#define SCREEN_HEIGHT 1000
 #define DEBUG_CURSOR 1
 
 

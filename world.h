@@ -11,6 +11,7 @@
 typedef struct {
 
   Model model;
+  BoundingBox bounding_box;
   Vector3 pos;
   Vector3 r;
   float r_amt;
@@ -25,5 +26,6 @@ extern World_Wall world_walls[MAX_MAP_SECTORS];
 extern int num_world_walls;
 
 void draw_world_walls(void);
+void draw_world_floor(void);
 void generate_world_walls(void);
 #endif // !WORLD_H

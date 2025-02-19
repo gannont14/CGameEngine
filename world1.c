@@ -15,61 +15,6 @@ void draw_world_walls(void);
 Model generate_wall_model(float height, float width, float length);
 float calculate_y_rotation(map_sector ms);
 Vector2 map_to_world_pos(Vector2 vec);
-BoundingBox generate_wall_bounding_box(Vector3 position, Vector3 size, float rotation);
-
-
-BoundingBox generate_wall_bounding_box(Vector3 position, Vector3 size, float rotation)
-{
-  // should have paid more attention in linear algebra
-  // working in 2 from top down view 
-  Vector2 corners[4];
-
-  // z in 3D is y in 2d
-  float half_width = size.x / 2.0f;
-  float half_depth = size.z / 2.0f;
-
-  Vector2 og_corners[4] = {
-    (Vector2){-half_width, -half_depth}, // back left
-    (Vector2){half_width, -half_depth},  // back right
-    (Vector2){-half_width, half_depth},  // front left
-    (Vector2){half_width, half_depth}    // front right 
-  };
-
-// Convert rotation to radians
-    float angle = rotation * DEG2RAD;
-    float cos_angle = cosf(angle);
-    float sin_angle = sinf(angle);
-    
-    // Find min and max points after rotation
-    float min_x = INFINITY, min_z = INFINITY;
-    float max_x = -INFINITY, max_z = -INFINITY;
-    
-    // Rotate each corner and track min/max
-    for (int i = 0; i < 4; i++) {
-        // Rotate point
-        corners[i].x = og_corners[i].x * cos_angle - og_corners[i].y * sin_angle;
-        corners[i].y = og_corners[i].x * sin_angle + og_corners[i].y * cos_angle;
-        
-        // Add wall position to get world coordinates
-        corners[i].x += position.x;
-        corners[i].y += position.z;  // Note: y in 2D becomes z in 3D
-        
-        // Track min and max
-        if (corners[i].x < min_x) min_x = corners[i].x;
-        if (corners[i].x > max_x) max_x = corners[i].x;
-        if (corners[i].y < min_z) min_z = corners[i].y;
-        if (corners[i].y > max_z) max_z = corners[i].y;
-    }
-    
-    // Create bounding box using min/max points
-    return (BoundingBox){
-        .min = (Vector3){ min_x, position.y - (WORLD_WALL_HEIGHT / 2.0f), min_z },
-        .max = (Vector3){ max_x, position.y + size.y - (WORLD_WALL_HEIGHT / 2.0f), max_z }
-    };
-
-
-
-}
 
 void draw_world_floor(void)
 {
@@ -138,8 +83,7 @@ World_Wall create_world_wall(map_sector ms)
   float wall_rotation = -1.0f * calculate_y_rotation(ms);
   
   /*printf("Generating wall at: [%f, %f, %f] with a rotation of %f, distance of %f\n", mid_vec.x, mid_vec.y, mid_vec.z, wall_rotation, wall_width);*/
-  BoundingBox bounding_box = generate_wall_bounding_box(mid_vec, (Vector3){wall_width, wall_height, wall_length}, wall_rotation);
-
+  BoundingBox bounding_box = GetModelBoundingBox(wall_model);
   World_Wall wall = (World_Wall){
     wall_model,
     bounding_box,
