@@ -6,7 +6,9 @@
 #include"map_editor.h"
 #include"raylib.h"
 #include"player.h"
-
+#include "server.h"
+#include "client.h"
+#include <netinet/in.h>
 
 void init_screen(void);
 
@@ -26,6 +28,15 @@ int main(int argc, char** argv)
   if(strcmp(argv[1], "player") == 0)
   {
     init_player();
+  }
+
+  if(strcmp(argv[1], "server") == 0)
+  {
+    init_server("127.0.0.1");
+  }
+  if(strcmp(argv[1], "client") == 0)
+ {
+      init_client();
   }
 
   /*pid_t p;*/
