@@ -4,6 +4,8 @@
 #include <netinet/in.h>
 #include "types.h"
 
+#define MAX_CLIENTS 5
+
 typedef struct {
 
   struct sockaddr_in client_addr;
@@ -11,13 +13,13 @@ typedef struct {
 
 } ClientInfo;
 
-enum GameStatus{
+typedef enum{
 
   GAME_LOADING = 0x1,
   GAME_ONGOING = 0x2,
   GAME_ENDING  = 0x3,
 
-};
+} GameStatus;
 
 int init_server(char* host);
 

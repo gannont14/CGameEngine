@@ -13,8 +13,6 @@
 typedef struct{
 
   char player_name[32];
-  struct sockaddr_in client_addr;
-  u8 client_id;
 
 } ConnectionRequest;
 
@@ -34,16 +32,15 @@ typedef struct{
 
 typedef enum{
 
-  ERROR_UNKNOWN  =  0x0,
-  ERROR_GAMEFULL =  0x1,
+  CONNECTION_SUCCESS = 0x0,
+  ERROR_UNKNOWN      =  0x1,
+  ERROR_GAMEFULL     =  0x2,
 
-} ResponseErrorMessage;
+} ResponseMessage;
 
 typedef struct{
 
-  u8                    status;
-  ResponseErrorMessage  message;
-  u16                   client_id;
+  ResponseMessage response_message;
 
 } ConnectionResponse;
 
@@ -61,7 +58,7 @@ typedef enum{
 // Packet Struct, might separate this into client and server packet
 typedef struct{
 
-  u8 type; 
+  PacketType type; 
   u8 seq;
   u8 client;
   union {
@@ -72,6 +69,8 @@ typedef struct{
   };
 
 }Packet;
+
+void print_packet_information(Packet* packet);
 
 #endif // !TRANSPORT_H
 

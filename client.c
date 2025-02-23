@@ -1,4 +1,3 @@
-// Client side implementation of UDP client-server model
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,15 +7,15 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "client.h"
+#include "transport.h"
 
 
 struct sockaddr_in servaddr;
 int sockfd;
 
+void send_connection_request_packet(void);
 
 int init_client(void) {
-	char buffer[MAXLINE];
-	char *hello = "Hello from client";
 	
 	// Creating socket file descriptor
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
@@ -32,19 +31,46 @@ int init_client(void) {
 	servaddr.sin_addr.s_addr = INADDR_ANY;
 		
 	int n, len;
-		
-	sendto(sockfd, (const char *)hello, strlen(hello),
-		0, (const struct sockaddr *) &servaddr,
-			sizeof(servaddr));
-	printf("Hello message sent.\n");
-			
-	n = recvfrom(sockfd, (char *)buffer, MAXLINE,
+
+  send_connection_request_packet();
+
+  Packet* packet = malloc(sizeof(Packet));
+  printf("Client: successfully malloced packet\n");
+
+  len = sizeof(servaddr);
+	n = recvfrom(sockfd, packet, sizeof(Packet),
 				MSG_WAITALL, (struct sockaddr *) &servaddr,
 				&len);
 
-	buffer[n] = '\0';
-	printf("Server : %s\n", buffer);
-	
+  printf("Client: Packet of size %d received back from client\n", n);
+  print_packet_information(packet);
+
 	close(sockfd);
 	return 0;
+}
+
+void send_connection_request_packet(void)
+{
+  Packet* packet;
+  packet = malloc(sizeof(Packet));
+  printf("Packet Malloced\n");
+  const char* player_name = "Test Player";
+  int name_len;
+
+  packet->type = CONNECTION_REQUEST;
+  packet->seq = 0;
+  packet->client = 0;
+  name_len = sizeof(packet->connection_request.player_name) - 1;
+  strncpy(packet->connection_request.player_name,
+          player_name,
+          name_len);
+  // very roundabout way to null terminate the player name string
+  packet->connection_request.player_name[name_len] = '\0';
+
+	sendto(sockfd, packet, sizeof(Packet),
+		0, (const struct sockaddr *) &servaddr,
+			sizeof(servaddr));
+
+  printf("Client Request sent\n");
+  free(packet);
 }
