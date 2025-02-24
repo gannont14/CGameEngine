@@ -22,6 +22,8 @@ struct sockaddr_in servaddr;
 GameStatus game_status;
 
 void server_receive_connection_requests(void);
+void broadcast_packet_to_clients(Packet* packet);
+void server_broadcast_game_start(void);
 void* server_create_receiving_thread(void* args);
 int send_packet(Packet* packet, struct sockaddr_in* cliaddr);
 int try_append_new_client(struct sockaddr_in client_addr);
@@ -69,8 +71,16 @@ int init_server(char* host) {
   }
 
   printf("Server: Created receiving thread\n");
+  int game_started = 0;
   while(1)
   {
+    //disgustin
+    if(game_started == 0 && num_clients_connected == 2)
+    {
+      printf("BROADCASTING GAME START\n");
+      game_started = 1;
+      server_broadcast_game_start();
+    }
     continue;
   }
 
@@ -121,7 +131,7 @@ void server_receive_connection_requests(void)
 				&len);
   if(n == -1)
   {
-    printf("Server: Error recieving packet\n");
+    printf("Server: Error receiving packet\n");
   }
 
   print_packet_information(packet);
@@ -133,6 +143,27 @@ void server_receive_connection_requests(void)
   printf("Server: Call to handle connection request packet complete\n");
   printf("Server: Amount of clients now connected: %d\n", num_clients_connected);
 }
+
+void server_broadcast_game_start(void)
+{
+
+  for(int i = 0; i < num_clients_connected; i++)
+  {
+    Packet* packet = malloc(sizeof(Packet));
+
+    packet->seq = 0;
+    packet->type = GAME_START;
+    packet->client = i;
+    packet->game_start_info.num_players = num_clients_connected;
+    packet->game_start_info.player_id = i;
+
+    send_packet(packet, &connected_clients[i].client_addr);
+    printf("Sent GAME_START packet to %d\n", i);
+    free(packet);
+  }
+
+}
+
 
 void send_client_connection_response(int client_id, int status, struct sockaddr_in* cliaddr)
 {
@@ -161,33 +192,7 @@ int send_packet(Packet* packet, struct sockaddr_in* cliaddr)
   printf("Server: Properly sent, returning\n");
 
   return val;
-
 }
-
-// moved to transport.c
-/*void print_packet_information(Packet* packet)*/
-/*{*/
-/*  if(packet == NULL)*/
-/*  {*/
-/*    printf("Error receiving packet\n");*/
-/*  }*/
-/*  printf("Received packet\n");*/
-/*  printf("type %d\n", packet->type);*/
-/*  printf("seq %d\n", packet->seq);*/
-/*  printf("client %d\n", packet->client);*/
-/*  switch (packet->type) {*/
-/*    case CONNECTION_REQUEST:*/
-/*      printf("Connection Request\n");*/
-/*      printf("client name: %s\n", packet->connection_request.player_name);*/
-/*      break;*/
-/*    default:*/
-/*      printf("inavlid packet type\n");*/
-/**/
-/*  }*/
-/**/
-/*  printf("Printed all packet information\n");*/
-/**/
-/*}*/
 
 int try_append_new_client(struct sockaddr_in client_addr)
 {

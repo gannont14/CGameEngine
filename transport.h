@@ -44,6 +44,12 @@ typedef struct{
 
 } ConnectionResponse;
 
+typedef struct {
+
+  u8 num_players;
+  u8 player_id;
+
+} GameStartInfo;
 
 
 typedef enum{
@@ -52,6 +58,7 @@ typedef enum{
   CONNECTION_RESPONSE =  0x2,
   PLAYER_INPUT        = 0x3,
   GAME_STATE          = 0x4,
+  GAME_START          = 0x5,
 
 } PacketType;
 
@@ -66,6 +73,7 @@ typedef struct{
     ConnectionResponse connection_response;
     PlayerInput player_input;
     GameState game_state; // bottlenecking the size of the union
+    GameStartInfo game_start_info;
   };
 
 }Packet;

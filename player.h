@@ -17,4 +17,7 @@ typedef struct{
 
 void init_player(void);
 
+extern int num_players;
+extern Player* players;
+
 #endif // !PLAYER_H

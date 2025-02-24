@@ -5,13 +5,19 @@
 #include "map_utils.h"
 #include"raylib.h"
 #include "raymath.h"
+#include "transport.h"
 #include "world.h"
 #include"player.h"
+
+#include <time.h>
+#include <unistd.h>
 
 
 void init_test_columns(void);
 bool check_collision(Vector3 position, Vector3 movement);
 
+int num_players = 0;
+Player* players;
 
 void check_player_input(Vector3 position, Vector3* movement)
 {
@@ -40,6 +46,14 @@ void check_player_input(Vector3 position, Vector3* movement)
         {
           *movement = new_movement;
         }
+}
+
+void draw_players(void)
+{
+  for(int i = 0; i < num_players; i++)
+  {
+    DrawSphere(players[i].pos, 4.0f, RED);
+  }
 }
 
 bool check_collision(Vector3 position, Vector3 movement)
@@ -94,7 +108,7 @@ void init_player(void)
 
     Vector3 movement;
 
-    DisableCursor();                    // Limit cursor to relative movement inside the window
+    /*DisableCursor();                    // Limit cursor to relative movement inside the window*/
 
     SetTargetFPS(60);            
     while (!WindowShouldClose())  
@@ -120,6 +134,7 @@ void init_player(void)
 
               draw_world_walls();
               draw_world_floor();
+              draw_players();
 
             EndMode3D();
 
