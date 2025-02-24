@@ -12,6 +12,7 @@
 
 struct sockaddr_in servaddr;
 int sockfd;
+int client_id = 0;
 
 void send_connection_request_packet(void);
 
@@ -30,7 +31,8 @@ int init_client(void) {
 	servaddr.sin_port = htons(PORT);
 	servaddr.sin_addr.s_addr = INADDR_ANY;
 		
-	int n, len;
+	int n;
+  socklen_t len;
 
   send_connection_request_packet();
 
@@ -41,6 +43,15 @@ int init_client(void) {
 	n = recvfrom(sockfd, packet, sizeof(Packet),
 				MSG_WAITALL, (struct sockaddr *) &servaddr,
 				&len);
+
+  if(n == -1)
+  {
+    printf("Error receiving connection response from server");
+    return 1;
+  }
+
+  // set client id 
+  client_id = packet->client;
 
   printf("Client: Packet of size %d received back from client\n", n);
   print_packet_information(packet);
@@ -59,7 +70,7 @@ void send_connection_request_packet(void)
 
   packet->type = CONNECTION_REQUEST;
   packet->seq = 0;
-  packet->client = 0;
+  packet->client = client_id; // default to 0, anything above 1 has been set by the server
   name_len = sizeof(packet->connection_request.player_name) - 1;
   strncpy(packet->connection_request.player_name,
           player_name,

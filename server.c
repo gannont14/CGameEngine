@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/_types/_socklen_t.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
@@ -25,9 +26,10 @@ void* server_create_receiving_thread(void* args);
 int send_packet(Packet* packet, struct sockaddr_in* cliaddr);
 int try_append_new_client(struct sockaddr_in client_addr);
 ClientInfo generate_client_info(struct sockaddr_in client_addr);
-void send_client_connection_response(int status, struct sockaddr_in* cliaddrs);
+void send_client_connection_response(int client_id, int status, struct sockaddr_in* cliaddrs);
 
 int init_server(char* host) {
+  printf("Hosting server on : %s", host);
 
   // set status to game loading
   game_status = GAME_LOADING;
@@ -58,7 +60,7 @@ int init_server(char* host) {
   pthread_t receiving_thread_id;
   int res = pthread_create(&receiving_thread_id,
                            NULL,
-                           (void*)server_create_receiving_thread,
+                           server_create_receiving_thread,
                            NULL);
   if(res == -1)
   {
@@ -80,6 +82,7 @@ int init_server(char* host) {
 
 void* server_create_receiving_thread(void* args)
 {
+  (void)args; // tells comp and vim I'm not using, no more warning
   // main loop
   while(1)
   {
@@ -109,31 +112,36 @@ void server_receive_connection_requests(void)
 
 	memset(&cliaddr, 0, sizeof(cliaddr));
 
-	int len, n;
+  int n;
+  socklen_t len;
 	len = sizeof(cliaddr); //len is value/result
 	
 	n = recvfrom(sockfd, (Packet *)packet, MAXLINE,
 				MSG_WAITALL, ( struct sockaddr *) &cliaddr,
 				&len);
+  if(n == -1)
+  {
+    printf("Server: Error recieving packet\n");
+  }
 
   print_packet_information(packet);
 
   // append new client
   int status = try_append_new_client(cliaddr);
   // send response back to client that they have been accepted
-  send_client_connection_response(status, &cliaddr);
+  send_client_connection_response(num_clients_connected, status, &cliaddr);
   printf("Server: Call to handle connection request packet complete\n");
   printf("Server: Amount of clients now connected: %d\n", num_clients_connected);
 }
 
-void send_client_connection_response(int status, struct sockaddr_in* cliaddr)
+void send_client_connection_response(int client_id, int status, struct sockaddr_in* cliaddr)
 {
   Packet* packet;
   packet = malloc(sizeof(Packet));
 
   packet->type = CONNECTION_RESPONSE;
   packet->seq = 0;
-  packet->client = 0;
+  packet->client = client_id;
   packet->connection_response.response_message = status;
 
   send_packet(packet, cliaddr);
@@ -197,7 +205,7 @@ int try_append_new_client(struct sockaddr_in client_addr)
 ClientInfo generate_client_info(struct sockaddr_in client_addr)
 {
   // hard code client id for now, shouldn't need to change, might not be used
-  u16 client_id = num_clients_connected + 1;
+  u8 client_id = num_clients_connected + 1;
   return (ClientInfo){
     client_addr,
     client_id

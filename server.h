@@ -9,7 +9,7 @@
 typedef struct {
 
   struct sockaddr_in client_addr;
-  u16 client_id;
+  u8 client_id;
 
 } ClientInfo;
 
