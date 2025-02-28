@@ -1,13 +1,16 @@
+#include <pthread.h>
 #include <stdbool.h>
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "client.h"
 #include "constants.h"
 #include "map_utils.h"
-#include"raylib.h"
+#include "raylib.h"
 #include "raymath.h"
-#include "transport.h"
+/*#include "transport.h"*/
+#include "server.h"
 #include "world.h"
-#include"player.h"
+#include "player.h"
 
 #include <time.h>
 #include <unistd.h>
@@ -18,42 +21,64 @@ bool check_collision(Vector3 position, Vector3 movement);
 
 int num_players = 0;
 Player* players;
+Camera3D camera = { 0 };
+int player_id;
 
 void check_player_input(Vector3 position, Vector3* movement)
 {
-        // reset movement to none
-        *movement = (Vector3){0.0f, 0.0f, 0.0f};
-        Vector3 new_movement = (Vector3){0.0f, 0.0f, 0.0f};
-        // list player movement keybinds
-        if(IsKeyDown(KEY_W))
-        { new_movement.x += PLAYER_MOVE_SPEED; }
-        if(IsKeyDown(KEY_S))
-        { new_movement.x -= PLAYER_MOVE_SPEED; }
-        if(IsKeyDown(KEY_A))
-        { new_movement.y -= PLAYER_MOVE_SPEED; }
-        if(IsKeyDown(KEY_D))
-        { new_movement.y += PLAYER_MOVE_SPEED; }
-    
-        // up and down
-        if(IsKeyDown(KEY_SPACE))
-        { new_movement.z += PLAYER_MOVE_SPEED; }
-        if(IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_C))
-        { new_movement.z -= PLAYER_MOVE_SPEED; }
-        /*printf("Attempting to move player to [%f, %f, %f]\n", new_movement.x, new_movement.y, new_movement.z);*/
+  double delta_time = GetFrameTime();
+  /*double SECONDS_PER_TICK = 1.0f / (float)TICK_RATE;*/
+  /*double client_move_speed = PLAYER_MOVE_SPEED * SECONDS_PER_TICK;*/
+  /*client_move_speed *= delta_time * TICK_RATE;*/
+  double client_move_speed = PLAYER_MOVE_SPEED * delta_time;
 
-      // check to make sure movement won't collide with any walls
-        if(!check_collision(position, new_movement))
-        {
-          *movement = new_movement;
-        }
+  // For debugging - print the speed ratio occasionally
+  static int frameCounter = 0;
+  /*if (++frameCounter % 60 == 0) {*/
+    /*printf("Client: deltaTime=%.6f, moveSpeed=%.6f\n", */
+    /*       delta_time, client_move_speed);*/
+  /*}*/
+
+
+  // reset movement to none
+  *movement = (Vector3){0.0f, 0.0f, 0.0f};
+  Vector3 new_movement = (Vector3){0.0f, 0.0f, 0.0f};
+  // list player movement keybinds
+  if(IsKeyDown(KEY_W)) { new_movement.x += client_move_speed; }
+  if(IsKeyDown(KEY_S)) { new_movement.x -= client_move_speed; }
+  if(IsKeyDown(KEY_A)) { new_movement.y -= client_move_speed; }
+  if(IsKeyDown(KEY_D)) { new_movement.y += client_move_speed; }
+
+  // up and down
+  if(IsKeyDown(KEY_SPACE)) { new_movement.z += client_move_speed; }
+  if(IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_C)) { new_movement.z -= client_move_speed; }
+  /*printf("Attempting to move player to [%f, %f, %f]\n", new_movement.x, new_movement.y, new_movement.z);*/
+
+  // check to make sure movement won't collide with any walls
+  /*if(!check_collision(position, new_movement))*/
+  /*{*/
+  /*}*/
+  *movement = new_movement;
 }
 
 void draw_players(void)
 {
+  pthread_mutex_lock(&game_state_mutex);
+  /*printf("Drawing %d players\n", num_players);*/
   for(int i = 0; i < num_players; i++)
   {
-    DrawSphere(players[i].pos, 4.0f, RED);
+    if(i != player_id - 1)
+    {
+      printf("Drawing player %d at [%f, %f, %f]\n",
+             players[i].client_id,
+             players[i].pos.x,
+             players[i].pos.y,
+             players[i].pos.z
+             );
+      DrawSphere(players[i].pos, 4.0f, RED);
+    }
   }
+  pthread_mutex_unlock(&game_state_mutex);
 }
 
 bool check_collision(Vector3 position, Vector3 movement)
@@ -87,19 +112,33 @@ bool check_collision(Vector3 position, Vector3 movement)
   return false;
 }
 
-void init_player(void)
+void init_player(int id)
 {
+    player_id = id;
+    if (players == NULL) 
+    {
+        printf("ERROR: players array is NULL in init_player\n");
+        exit(EXIT_FAILURE);
+    }
+
     Vector3 player_start_pos = (Vector3){
       SCREEN_WIDTH / 20.0f, 10.0f, 
       SCREEN_HEIGHT / 20.0f
     };
 
-    Camera3D camera = { 0 };
     camera.position = player_start_pos;
     camera.target = (Vector3){ 0.0f, 2.0f, 0.0f }; 
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };    
     camera.fovy = (float)PLAYER_FOV;             
     camera.projection = CAMERA_PERSPECTIVE;     
+
+    printf("Before, player created with id: %d\n", id);
+    pthread_mutex_lock(&game_state_mutex);
+    players[id - 1].pos = player_start_pos;
+    printf("strat postii set\n");
+    players[id - 1].camera = camera;
+    pthread_mutex_unlock(&game_state_mutex);
+    printf("After\n");
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Player");
     load_map_layout("map_layout.txt");
@@ -108,9 +147,9 @@ void init_player(void)
 
     Vector3 movement;
 
-    /*DisableCursor();                    // Limit cursor to relative movement inside the window*/
+    DisableCursor();                    // Limit cursor to relative movement inside the window
 
-    SetTargetFPS(60);            
+    SetTargetFPS(CLIENT_TARGET_FPS);            
     while (!WindowShouldClose())  
     {
 

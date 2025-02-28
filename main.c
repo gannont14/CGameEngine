@@ -27,14 +27,14 @@ int main(int argc, char** argv)
   }
   if(strcmp(argv[1], "player") == 0)
   {
-    init_player();
+    init_player(0);
   }
 
-  if(strcmp(argv[1], "server") == 0)
+  if(strcmp(argv[1], "server") == 0 || strcmp(argv[1], "s") == 0)
   {
     init_server("127.0.0.1");
   }
-  if(strcmp(argv[1], "client") == 0)
+  if(strcmp(argv[1], "client") == 0 || strcmp(argv[1], "c") == 0)
  {
       init_client();
   }

@@ -1,6 +1,7 @@
 #ifndef TRANSPORT_H
 #define TRANSPORT_H
 
+#include "raylib.h"
 #include"types.h"
 #include"player.h"
 #include<netinet/in.h>
@@ -19,6 +20,7 @@ typedef struct{
 typedef struct{
 
   u8 input;
+  Camera3D camera;
 
 } PlayerInput;
 

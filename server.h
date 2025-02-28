@@ -5,6 +5,7 @@
 #include "types.h"
 
 #define MAX_CLIENTS 5
+#define TICK_RATE 60
 
 typedef struct {
 
