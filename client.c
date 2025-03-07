@@ -16,12 +16,13 @@ struct sockaddr_in servaddr;
 int sockfd;
 int client_id = 0;
 int client_running = 0;
+int seqnum = 0;
 
 pthread_mutex_t game_state_mutex;
 const int POLLING_RATE_HZ = 60;
 
 void send_connection_request_packet(void);
-u8 get_current_client_input_state();
+u8 get_current_client_input_state(void);
 void* client_broadcast_thread(void* arg);
 void client_handle_game_state(Packet packet);
 void client_handle_game_start(Packet packet);
@@ -110,13 +111,19 @@ void* client_broadcast_thread(void* arg)
 
     Packet packet = {
       .type = PLAYER_INPUT,
-      .seq = 0, 
+      .seq = ++seqnum % MAX_SEQ_NUM, 
       .client = client_id,
       .player_input = (PlayerInput){
         client_input,
         camera
       }
     };
+
+    /*printf("Camera Target: [%f, %f, %f]\n",*/
+    /*       camera.target.x,*/
+    /*       camera.target.y,*/
+    /*       camera.target.z*/
+    /*       );*/
 
 
     pthread_mutex_unlock(&game_state_mutex);
@@ -136,7 +143,7 @@ void* client_broadcast_thread(void* arg)
   return NULL;
 }
 
-u8 get_current_client_input_state()
+u8 get_current_client_input_state(void)
 {
 
     u8 inp = 0;
@@ -212,7 +219,7 @@ void client_handle_game_start(Packet packet)
       
       // Initialize camera with safe defaults
       players[i].camera.position = (Vector3){0.0f, 0.0f, 0.0f};
-      players[i].camera.target = (Vector3){1.0f, 0.0f, 0.0f};
+      players[i].camera.target = (Vector3){0.0f, 0.0f, 0.0f};
       players[i].camera.up = (Vector3){0.0f, 1.0f, 0.0f};
       players[i].camera.fovy = PLAYER_FOV;
       players[i].camera.projection = CAMERA_PERSPECTIVE;
@@ -233,6 +240,7 @@ void client_handle_game_state(Packet packet)
     if(remote_player->client_id  != client_id)
     {
       players[remote_player->client_id - 1].pos = remote_player->pos;
+      players[remote_player->client_id - 1].camera = remote_player->camera;
 
       /*printf("Updated remote player %d position \n", client_id);*/
       /*printf("remote player pos: [%.2f, %.2f, %.2f] \n",*/
@@ -261,7 +269,7 @@ void send_connection_request_packet(void)
   int name_len;
 
   packet->type = CONNECTION_REQUEST;
-  packet->seq = 0;
+  packet->seq = ++seqnum % MAX_SEQ_NUM;
   packet->client = client_id; // default to 0, anything above 1 has been set by the server
   name_len = sizeof(packet->connection_request.player_name) - 1;
   strncpy(packet->connection_request.player_name,

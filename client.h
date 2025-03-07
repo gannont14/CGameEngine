@@ -4,6 +4,7 @@
 #include <pthread.h>
 	
 #define MAXLINE 1024
+#define MAX_SEQ_NUM 255
 
 int init_client(void);
 

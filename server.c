@@ -86,7 +86,7 @@ int init_server(char* host) {
   while(1)
   {
     //disgustin
-    if(game_started == 0 && num_clients_connected == 2)
+    if(game_started == 0 && num_clients_connected == NUM_PLAYERS_TO_START_SERVER)
     {
       /*printf("BROADCASTING GAME START\n");*/
       game_started = 1;
@@ -123,9 +123,10 @@ int init_server(char* host) {
 
 void* server_game_thread(void* args)
 {
+  (void)args;
   printf("Server: Creating server's broadcast thread\n");
 
-  const int MAX_INPUT_PACKETS = 10;
+  const int MAX_INPUT_PACKETS = 60;
   while(1)
   {
     for(int i = 0; i < MAX_INPUT_PACKETS; i++)
@@ -176,6 +177,11 @@ void server_receive_player_input(void)
 	int n = recvfrom(sockfd, (Packet *)packet, MAXLINE,
 				MSG_DONTWAIT, ( struct sockaddr *) &cliaddr, // using a non-waiting socket to it doesn't block
 				&len);
+  bool player_taken_action[num_players];
+  for(int i = 0; i < num_players; i++)
+  {
+    player_taken_action[i] = 0;
+  }
 
   if(n > 0)
   {
@@ -184,8 +190,10 @@ void server_receive_player_input(void)
 
       // find client id, this could be circumvented if the player's id is where they are in the list
       if(packet->player_input.input != 0){
-        /*printf("Server: received player %d input: %d\n",*/
-        /*       packet->client, packet->player_input.input);*/
+        printf("packet from client|Client id: %d|seqnum: %d|Input: %d\n",
+               packet->client,
+               packet->seq,
+               packet->player_input.input);
       }
 
       int client_index = -1;
@@ -199,7 +207,7 @@ void server_receive_player_input(void)
           break;
         }
       }
-      if(client_index != -1)
+      if(client_index != -1 && player_taken_action[client_index] != true)
       {
         // lock mutex
         pthread_mutex_lock(&game_state_mutex);
@@ -209,15 +217,9 @@ void server_receive_player_input(void)
         Player* player = &server_players[client_index];
         /*double move_speed = PLAYER_MOVE_SPEED / (double)TICK_RATE / SERVER_TO_PLAYER_MOVE_SPEED_SCALING;*/
 
-        double seconds_per_tick = 1.0f / TICK_RATE;
-        double move_speed = PLAYER_MOVE_SPEED * seconds_per_tick / POLLING_RATE_HZ;
-
-// Debug output
-        static int tickCounter = 0;
-        if (++tickCounter % 60 == 0) {
-            printf("Server: secondsPerTick=%.6f, moveSpeed=%.6f\n", 
-                   seconds_per_tick, move_speed);
-        }
+        double seconds_per_tick = 1.0f / (double)TICK_RATE;
+        double move_speed = SERVER_MOVE_SPEED * seconds_per_tick * 4.0f;
+        /*double move_speed = PLAYER_MOVE_SPEED * seconds_per_tick * seconds_per_tick;*/
 
 
         player->camera = packet->player_input.camera;
@@ -225,47 +227,25 @@ void server_receive_player_input(void)
         // these are ripped straight from the raylib source code  ( and don't work :D )
         // In my client side I am using updateCameraPro, which won't work all that well,
         // so I'm stealing this instead
-        /*Vector3 forward = Vector3Normalize(Vector3Subtract(player->camera.target*/
-        /*                                                   , player->camera.position));*/
-        /**/
-        /*Vector3 right = Vector3Normalize(*/
-        /*                      Vector3CrossProduct(forward,*/
-        /*                      Vector3Normalize(player->camera.up)*/
-        /*                                ));*/
+        Vector3 movement = (Vector3){ 0.0f, 0.0f, 0.0f };
 
-        Vector3 movement = { 0 };
-
-        printf("Player %d's camera position: [%f, %f, %f]\n",
-               player->client_id,
-               player->camera.position.x,
-               player->camera.position.y,
-               player->camera.position.z
-               );
 
         // if, if, if , ififififi
         if((input & PLAYER_FORWARD) > 0)
         { 
           movement.x +=  move_speed;
-          /*movement.y += forward.y * move_speed;*/
-          /*movement.z += forward.z * move_speed;*/
         }
         if((input & PLAYER_BACKWARD) > 0)
         { 
           movement.x -= move_speed;
-          /*movement.y -= forward.y * move_speed;*/
-          /*movement.z -= forward.z * move_speed;*/
         }
         if((input & PLAYER_LEFT) > 0)
         { 
-          /*movement.x -= right.x * move_speed;*/
           movement.y -= move_speed;
-          /*movement.z -= right.z * move_speed;*/
         }
         if((input & PLAYER_RIGHT) > 0)
         { 
-          /*movement.x += right.x * move_speed;*/
           movement.y += move_speed;
-          /*movement.z += right.z * move_speed;*/
         }
 
         if((input & PLAYER_UP) > 0)
@@ -283,14 +263,21 @@ void server_receive_player_input(void)
         Vector3 offsetForward = Vector3Scale(forwardWorldPlane, movement.x);
 
         Vector3 rightWorldPlane = right;
-        rightWorldPlane.y = 0.0f; // Zero out the Y component
-        rightWorldPlane = Vector3Normalize(rightWorldPlane); // Renormalize
+        rightWorldPlane.y = 0.0f; 
+        rightWorldPlane = Vector3Normalize(rightWorldPlane); 
         Vector3 offsetRight = Vector3Scale(rightWorldPlane, movement.y);
 
         Vector3 offsetUp = { 0.0f, movement.z, 0.0f };
 
         // Combine all movements
         Vector3 totalOffset = Vector3Add(Vector3Add(offsetForward, offsetRight), offsetUp);
+
+        // DEBUG
+        if(totalOffset.x != 0 || totalOffset.y != 0 || totalOffset.z != 0)
+        {
+          printf("SERVER MOVEMENT: dt=%.6f, raw_speed=%.6f, calculated_offset=[%.6f, %.6f, %.6f]\n", 
+                 seconds_per_tick, move_speed, totalOffset.x, totalOffset.y, totalOffset.z);
+        }
 
         // Apply the combined movement
         player->pos = Vector3Add(player->pos, totalOffset);
@@ -302,11 +289,8 @@ void server_receive_player_input(void)
         player->camera.target = Vector3Add(player->camera.position, 
                                    Vector3Scale(forward, Vector3Distance(player->camera.position, 
                                                                          player->camera.target)));
-        /**/
-        /*player->pos.x += movement.x;*/
-        /*player->pos.y += movement.y;*/
-        /*player->pos.z += movement.z;*/
 
+        player_taken_action[player->client_id] = true;
         // unlock mutex
         pthread_mutex_unlock(&game_state_mutex);
       }
@@ -342,33 +326,22 @@ void server_receive_connection_requests(void)
   int status = try_append_new_client(cliaddr);
   // send response back to client that they have been accepted
   send_client_connection_response(num_clients_connected, status, &cliaddr);
-  /*printf("Server: Call to handle connection request packet complete\n");*/
   printf("Server: Amount of clients now connected: %d\n", num_clients_connected);
 }
 
 void server_broadcast_game_start(void)
 {
-  // malloc players for clients before game starts
   server_players = malloc(sizeof(Player) * num_clients_connected);
 
   // set all of the palyers client ids
   for(int i = 0; i < num_clients_connected; i++)
   {
     server_players[i].client_id = i + 1;
-    // Initialize with default camera values
-      server_players[i].pos = (Vector3){
-        SCREEN_WIDTH / 20.0f + (i * 10.0f), // Space players apart
-        10.0f, 
-        SCREEN_HEIGHT / 20.0f + (i * 10.0f)
-      };
-      
+      // Initialize with default camera values
+      server_players[i].pos = default_player_pos;      
       server_players[i].camera.position = server_players[i].pos;
-      server_players[i].camera.target = (Vector3){ 
-        server_players[i].pos.x + 1.0f, // Look forward on X axis
-        server_players[i].pos.y,
-        server_players[i].pos.z
-      };
-      server_players[i].camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+      server_players[i].camera.target = default_camera_target;
+      server_players[i].camera.up = default_camera_up;
       server_players[i].camera.fovy = PLAYER_FOV;
       server_players[i].camera.projection = CAMERA_PERSPECTIVE;
   }
@@ -409,24 +382,16 @@ void server_broadcast_game_state(void)
   /*printf("Num clients connected : %d\n", num_clients_connected);*/
   for(int i = 0; i < num_clients_connected; i++)
   {
-    /*printf("Setting player %d to players[%d]\n", i, i);*/
-    /*printf("Client id: %d position: [%f, %f, %f]\n",*/
-    /*       server_players[i].client_id, server_players[i].pos.x,*/
-    /*       server_players[i].pos.y, server_players[i].pos.z);*/
     packet->game_state.players[i] = server_players[i];
   }
 
   pthread_mutex_unlock(&game_state_mutex);
 
   // send to all 
-  /*printf("Server: Broadcasting game state to all players\n");*/
   for(int i = 0; i < num_clients_connected; i++)
   {
     send_packet(packet, &connected_clients[i].client_addr);
   }
-
-  /*printf("Server: Broadcasted game state\n");*/
-
 }
 
 
@@ -443,8 +408,6 @@ void send_client_connection_response(int client_id, int status, struct sockaddr_
   send_packet(packet, cliaddr);
 
   free(packet);
-
-  /*printf("Server: connection response packet freed\n");*/
 }
 
 int send_packet(Packet* packet, struct sockaddr_in* cliaddr)
@@ -454,7 +417,6 @@ int send_packet(Packet* packet, struct sockaddr_in* cliaddr)
 	val =  sendto(sockfd, packet, sizeof(Packet),
 		0, (const struct sockaddr *) cliaddr,
 			len);
-  /*printf("Server: Properly sent, returning\n");*/
 
   return val;
 }
