@@ -7,6 +7,8 @@
 #define WORLD_WALL_HEIGHT 10
 #define WORLD_WALL_LENGTH 3
 #define WORLD_WALL_COLOR BLUE
+#define WORLD_WIDTH 1200
+#define WORLD_HEIGHT 800
 
 typedef struct {
 

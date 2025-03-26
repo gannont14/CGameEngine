@@ -54,8 +54,8 @@ void check_player_input(Vector3 position, Vector3* movement)
   if(IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_C)) { new_movement.z -= client_move_speed; }
   /*printf("Attempting to move player to [%f, %f, %f]\n", new_movement.x, new_movement.y, new_movement.z);*/
 
-  printf("CLIENT MOVEMENT: dt=%.6f, speed=%.6f, movement=[%.6f, %.6f, %.6f]\n",
-       delta_time, client_move_speed, new_movement.x, new_movement.y, new_movement.z);
+  /*printf("CLIENT MOVEMENT: dt=%.6f, speed=%.6f, movement=[%.6f, %.6f, %.6f]\n",*/
+  /*     delta_time, client_move_speed, new_movement.x, new_movement.y, new_movement.z);*/
   // check to make sure movement won't collide with any walls
   /*if(!check_collision(position, new_movement))*/
   /*{*/
@@ -63,37 +63,38 @@ void check_player_input(Vector3 position, Vector3* movement)
   *movement = new_movement;
 }
 
-void update_player_to_server_position(void)
-{
-  if(players == NULL) return;
-  static int num_corrections = 0;
-
-   pthread_mutex_lock(&game_state_mutex);
-  
-  int player_index = player_id - 1;
-  
-  // Calculate distance to server position
-  Vector3 server_pos = players[player_index].pos;
-  Vector3 current_pos = camera.position;
-  Vector3 distance = Vector3Subtract(server_pos, current_pos);
-  
-  // Only correct if significant difference exists (prevent jitter)
-  float dist_magnitude = Vector3Length(distance);
-  if(dist_magnitude > 0.5f) {
-    
-    // Calculate interpolation step
-    Vector3 step = Vector3Scale(distance, interpolation_factor);
-    
-    // Apply correction to camera
-    camera.position = Vector3Add(camera.position, step);
-    
-    // Update player position
-    players[player_index].pos = camera.position;
-  }
-  
-  pthread_mutex_unlock(&game_state_mutex);
-
-}
+// Unused, was somehow causing more issues
+/*void update_player_to_server_position(void)*/
+/*{*/
+/*  if(players == NULL) return;*/
+/*  static int num_corrections = 0;*/
+/**/
+/*   pthread_mutex_lock(&game_state_mutex);*/
+/**/
+/*  int player_index = player_id - 1;*/
+/**/
+/*  // Calculate distance to server position*/
+/*  Vector3 server_pos = players[player_index].pos;*/
+/*  Vector3 current_pos = camera.position;*/
+/*  Vector3 distance = Vector3Subtract(server_pos, current_pos);*/
+/**/
+/*  // Only correct if significant difference exists (prevent jitter)*/
+/*  float dist_magnitude = Vector3Length(distance);*/
+/*  if(dist_magnitude > 0.5f) {*/
+/**/
+/*    // Calculate interpolation step*/
+/*    Vector3 step = Vector3Scale(distance, interpolation_factor);*/
+/**/
+/*    // Apply correction to camera*/
+/*    camera.position = Vector3Add(camera.position, step);*/
+/**/
+/*    // Update player position*/
+/*    players[player_index].pos = camera.position;*/
+/*  }*/
+/**/
+/*  pthread_mutex_unlock(&game_state_mutex);*/
+/**/
+/*}*/
 
 
 void draw_debug_info(void)
@@ -134,12 +135,12 @@ void draw_players(void)
       /*       players[i].pos.z*/
       /*       );*/
 
-      printf("Client: Player %d's camera target: [%f, %f, %f]\n",
-             players[i].client_id,
-             players[i].camera.target.x,
-             players[i].camera.target.y,
-             players[i].camera.target.z
-             );
+      /*printf("Client: Player %d's camera target: [%f, %f, %f]\n",*/
+      /*       players[i].client_id,*/
+      /*       players[i].camera.target.x,*/
+      /*       players[i].camera.target.y,*/
+      /*       players[i].camera.target.z*/
+      /*       );*/
       DrawSphere(players[i].pos, 4.0f, RED);
       DrawRay((Ray){players[i].pos, players[i].camera.target}, BLUE);
     }
@@ -194,13 +195,13 @@ void init_player(int id)
     camera.fovy = (float)PLAYER_FOV;             
     camera.projection = CAMERA_PERSPECTIVE;     
 
-    printf("Before, player created with id: %d\n", id);
+    /*printf("Before, player created with id: %d\n", id);*/
     pthread_mutex_lock(&game_state_mutex);
     players[id - 1].pos = default_player_pos;
-    printf("strat postii set\n");
+    /*printf("strat postii set\n");*/
     players[id - 1].camera = camera;
     pthread_mutex_unlock(&game_state_mutex);
-    printf("After\n");
+    /*printf("After\n");*/
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Player");
     load_map_layout("map_layout.txt");

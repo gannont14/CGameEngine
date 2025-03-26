@@ -190,10 +190,10 @@ void server_receive_player_input(void)
 
       // find client id, this could be circumvented if the player's id is where they are in the list
       if(packet->player_input.input != 0){
-        printf("packet from client|Client id: %d|seqnum: %d|Input: %d\n",
-               packet->client,
-               packet->seq,
-               packet->player_input.input);
+        /*printf("packet from client|Client id: %d|seqnum: %d|Input: %d\n",*/
+        /*       packet->client,*/
+        /*       packet->seq,*/
+        /*       packet->player_input.input);*/
       }
 
       int client_index = -1;
@@ -218,7 +218,7 @@ void server_receive_player_input(void)
         /*double move_speed = PLAYER_MOVE_SPEED / (double)TICK_RATE / SERVER_TO_PLAYER_MOVE_SPEED_SCALING;*/
 
         double seconds_per_tick = 1.0f / (double)TICK_RATE;
-        double move_speed = SERVER_MOVE_SPEED * seconds_per_tick * 4.0f;
+        double move_speed = SERVER_MOVE_SPEED * seconds_per_tick * 3.0f;
         /*double move_speed = PLAYER_MOVE_SPEED * seconds_per_tick * seconds_per_tick;*/
 
 
@@ -273,11 +273,11 @@ void server_receive_player_input(void)
         Vector3 totalOffset = Vector3Add(Vector3Add(offsetForward, offsetRight), offsetUp);
 
         // DEBUG
-        if(totalOffset.x != 0 || totalOffset.y != 0 || totalOffset.z != 0)
-        {
-          printf("SERVER MOVEMENT: dt=%.6f, raw_speed=%.6f, calculated_offset=[%.6f, %.6f, %.6f]\n", 
-                 seconds_per_tick, move_speed, totalOffset.x, totalOffset.y, totalOffset.z);
-        }
+        /*if(totalOffset.x != 0 || totalOffset.y != 0 || totalOffset.z != 0)*/
+        /*{*/
+        /*  printf("SERVER MOVEMENT: dt=%.6f, raw_speed=%.6f, calculated_offset=[%.6f, %.6f, %.6f]\n", */
+        /*         seconds_per_tick, move_speed, totalOffset.x, totalOffset.y, totalOffset.z);*/
+        /*}*/
 
         // Apply the combined movement
         player->pos = Vector3Add(player->pos, totalOffset);

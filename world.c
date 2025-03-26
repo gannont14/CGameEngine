@@ -73,7 +73,8 @@ BoundingBox generate_wall_bounding_box(Vector3 position, Vector3 size, float rot
 
 void draw_world_floor(void)
 {
-  DrawPlane((Vector3){SCREEN_WIDTH / 20.0f, 0.0f, SCREEN_HEIGHT / 20.0f}, (Vector2){SCREEN_WIDTH / 10.0f, SCREEN_HEIGHT / 10.0f}, GRAY);
+  DrawPlane((Vector3){SCREEN_WIDTH / 20.0f, 0.0f, SCREEN_HEIGHT / 20.0f},
+            (Vector2){SCREEN_WIDTH / 10.0f, SCREEN_HEIGHT / 10.0f}, GRAY);
 }
 
 void draw_world_walls(void)
